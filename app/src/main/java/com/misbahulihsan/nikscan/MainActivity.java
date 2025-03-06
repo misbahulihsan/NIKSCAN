@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -40,8 +41,10 @@ public class MainActivity extends AppCompatActivity {
     private PreviewView previewView;
     private EditText edtNik;
     private Button btnScanNik;
+    private SwitchCompat switchFlash;
     private ExecutorService cameraExecutor;
     private ProcessCameraProvider cameraProvider;
+    private Camera camera;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,17 +54,25 @@ public class MainActivity extends AppCompatActivity {
         previewView = findViewById(R.id.previewView);
         edtNik = findViewById(R.id.edtNik);
         btnScanNik = findViewById(R.id.btnScanNik);
+        switchFlash = findViewById(R.id.switchFlash);
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 
-        // Cek dan minta izin kamera
+        // Cek izin kamera
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
         }
 
-        // Tombol untuk mulai scanning NIK
+        // Tombol Scan NIK
         btnScanNik.setOnClickListener(v -> startCamera());
+
+        // Switch untuk Flash
+        switchFlash.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (camera != null) {
+                camera.getCameraControl().enableTorch(isChecked);
+            }
+        });
     }
 
     private void startCamera() {
@@ -84,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 imageAnalysis.setAnalyzer(cameraExecutor, this::analyzeImage);
 
                 cameraProvider.unbindAll();
-                Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis);
+                camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis);
 
             } catch (Exception e) {
                 Log.e("CameraX", "Gagal memulai kamera", e);
